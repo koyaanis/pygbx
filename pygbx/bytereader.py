@@ -1,7 +1,8 @@
 import logging
+import math
 import struct
 from io import IOBase
-from pygbx.headers import Vector3
+from pygbx.headers import Vector3, Quaternion
 from os import SEEK_END
 
 class PositionInfo(object):
@@ -247,3 +248,41 @@ class ByteReader(object):
         if inp - 1 >= len(self.stored_strings):
             return ''
         return self.stored_strings[inp - 1]
+
+    def read_quat_6(self):
+        """Reads a quaternion from the buffer, the quaternion is stored in 6 bytes.
+        Returns:
+            the quaternion read from the buffer
+        """
+        angle = self.read_uint16() * math.pi / 65535.0
+        axis = self.read_vec3_unit_4()
+        vec = axis * math.sin(angle)
+        return Quaternion(vec.x, vec.y, vec.z, math.cos(angle))
+    def read_vec3_unit_4(self) -> Vector3:
+        """Reads a Vector3 from the buffer, the vector is stored in 4 bytes
+        Returns:
+            the vector read from the buffer
+        """
+        axis_heading = self.read_int16() * math.pi / 32767.0
+        axis_pitch = self.read_int16() * (math.pi / 2.0) / 32767.0
+        return Vector3(math.cos(axis_heading) * math.cos(axis_pitch),
+                        math.sin(axis_heading) * math.cos(axis_pitch),
+                        math.sin(axis_pitch))
+    def read_vec3_4(self) -> Vector3:
+        """Reads a unit Vector3 from the buffer, the vector is stored in 4 bytes
+        Returns:
+            the vector read from the buffer
+        """
+        mag16 = self.read_int16()
+        mag = 0 if mag16 == -32768 else math.exp(mag16 / 1000.0)
+        return mag * self.read_vec3_unit_2()
+    def read_vec3_unit_2(self) -> Vector3:
+        """Reads a unit Vector3 from the buffer, the vector is stored in 2 bytes
+        Returns:
+            the vector read from the buffer
+        """
+        axis_heading = self.read_byte() * math.pi / 127.0
+        axis_pitch = self.read_byte() * (math.pi / 2.0) / 127.0
+        return Vector3(math.cos(axis_heading) * math.cos(axis_pitch),
+                        math.sin(axis_heading) * math.cos(axis_pitch),
+                        math.sin(axis_pitch))

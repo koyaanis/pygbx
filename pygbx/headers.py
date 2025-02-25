@@ -65,6 +65,12 @@ class Vector3(object):
     def __sub__(self, other):
         return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
 
+    def __mul__(self, other):
+        return Vector3(self.x * other, self.y * other, self.z * other)
+
+    def __rmul__(self, other):
+        return Vector3(self.x * other, self.y * other, self.z * other)
+
     def __getitem__(self, key):
         if key == 0:
             return self.x
@@ -87,6 +93,40 @@ class Vector3(object):
             the vector as a list made of 3 elements
         """
         return [self.x, self.y, self.z]
+
+
+class Quaternion(object):
+    """The Quaternion class represents a 4D quaternion, usually read directly from the GBX file."""
+    def __init__(self, x=0, y=0, z=0, w=0):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.w = w
+
+    def __getitem__(self, key):
+        if key == 0:
+            return self.x
+        elif key == 1:
+            return self.y
+        elif key == 2:
+            return self.z
+        elif key == 3:
+            return self.w
+        return None
+
+    def __eq__(self, other):
+        if isinstance(other, list):
+            return self.x == other[0] and self.y == other[1] and self.z == other[2] and self.w == other[3]
+
+        return self.x == other.x and self.y == other.y and self.z == other.z and self.w == other.w
+
+    def as_array(self):
+        """Returns the quaternion as a list.
+
+        Returns:
+            the quaternion as a list made of 4 elements
+        """
+        return [self.x, self.y, self.z, self.w]
 
 
 class CGameChallenge(CGameHeader):
@@ -152,7 +192,11 @@ class CGameGhost(CGameHeader):
     def __init__(self, id):
         self.id = id
         self.records = []
+        self.saved_mobil_class_id = 0
+        self.is_fixed_time_step = False
+        self.U01 = 0
         self.sample_period = None
+        self.version = 0
 
 
 class CGameCtnGhost(CGameGhost):
@@ -200,14 +244,46 @@ class GhostSampleRecord(object):
     BLOCK_SIZE_XZ = 32
     BLOCK_SIZE_Y = 8
 
-    def __init__(self, position, angle, axis_heading, axis_pitch, speed, vel_heading, vel_pitch):
+    def __init__(self, position, rotation, velocity, angular_velocity, speed_forward, speed_sidewards,
+                 rpm, fl_wheel_rotation, fr_wheel_rotation, rr_wheel_rotation, rl_wheel_rotation,
+                 steer, gas, brake, u11, u12, u13,  u14, turbo_strength, steer_front,
+                 fl_dampen_len, fl_ground_contact_material, fr_dampen_len, fr_ground_contact_material,
+                 rr_dampen_len, rr_ground_contact_material, rl_dampen_len, rl_ground_contact_material,
+                 u25, u26, u27, dirt_blend):
         self.position = position
-        self.angle = angle
-        self.axis_heading = axis_heading
-        self.axis_pitch = axis_pitch
-        self.speed = speed
-        self.vel_heading = vel_heading
-        self.vel_pitch = vel_pitch
+        self.rotation = rotation
+        self.velocity = velocity # in m/s
+        self.angular_velocity = angular_velocity
+        self.speed_forward = speed_forward
+        self.speed_sidewards = speed_sidewards
+        self.rpm = rpm
+        self.fl_wheel_rotation = fl_wheel_rotation
+        self.fr_wheel_rotation = fr_wheel_rotation
+        self.rr_wheel_rotation = rr_wheel_rotation
+        self.rl_wheel_rotation = rl_wheel_rotation
+        self.steer = steer
+        self.gas = gas
+        self.brake = brake
+        self.u11 = u11
+        self.u12 = u12
+        self.u13 = u13
+        self.u14 = u14
+        self.turbo_strength = turbo_strength
+        self.steer_front = steer_front
+        self.fl_dampen_len = fl_dampen_len
+        self.fl_ground_contact_material = fl_ground_contact_material
+        self.fr_dampen_len = fr_dampen_len
+        self.fr_ground_contact_material = fr_ground_contact_material
+        self.rr_dampen_len = rr_dampen_len
+        self.rr_ground_contact_material = rr_ground_contact_material
+        self.rl_dampen_len = rl_dampen_len
+        self.rl_ground_contact_material = rl_ground_contact_material
+        self.u25 = u25
+        self.horn = self.u25 & 3
+        self.is_turbo = (self.u25 & 128) != 0
+        self.u26 = u26
+        self.u27 = u27
+        self.dirt_blend = dirt_blend
 
     @property
     def display_speed(self):

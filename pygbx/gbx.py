@@ -1,4 +1,5 @@
 import logging
+import math
 from enum import IntEnum
 
 import lzo
@@ -744,9 +745,11 @@ class Gbx(object):
         data = zlib.decompress(comp_data, 0, uncomp_sz)
 
         gr = ByteReader(data)
-        gr.skip(3 * 4)
+        game_class.saved_mobil_class_id = gr.read_uint32()
+        game_class.is_fixed_time_step = True if gr.read_int32() else False
+        game_class.U01 = gr.read_int32()
         game_class.sample_period = gr.read_uint32()
-        gr.skip(1 * 4)
+        game_class.version = gr.read_int32()
 
         sample_data_sz = gr.read_uint32()
         sample_data_pos = gr.pos
@@ -772,9 +775,39 @@ class Gbx(object):
             sample_pos = gr.pos
 
             record = headers.GhostSampleRecord(
-                gr.read_vec3(), gr.read_uint16(), gr.read_int16(),
-                gr.read_int16(), gr.read_int16(),
-                gr.read_int8(), gr.read_int8())
+                gr.read_vec3(),  # position
+                gr.read_quat_6(),  # rotation
+                gr.read_vec3_4(),  # velocity
+                gr.read_vec3_4(),  # angular velocity
+                (gr.read_uint16() / 65535.0 * 11000.0 - 1000.0) * 3.6,  # speed forward
+                gr.read_uint16() / 65535.0 * 2000.0 - 1000.0,  # speed sideward
+                gr.read_uint16() / 65535.0 * 30000.0,  # rpm
+                gr.read_uint16() / 65535.0 * 1608.495,  # fl_wheel_rotation
+                gr.read_uint16() / 65535.0 * 1608.495,  # fr_wheel_rotation
+                gr.read_uint16() / 65535.0 * 1608.495,  # rr_wheel_rotation
+                gr.read_uint16() / 65535.0 * 1608.495,  # rl_wheel_rotation
+                gr.read_byte() / 255.0 * 2.0 - 1.0,  # steer
+                gr.read_byte() / 255.0,  # gas
+                gr.read_byte() / 255.0,  # brake
+                gr.read_byte(),  # u11
+                gr.read_byte(),  # u12
+                gr.read_byte() / 255.0 * 2.0 - 1.0,  # u13
+                gr.read_byte() / 255.0 * 2.0 - 1.0,  # u14
+                gr.read_byte() / 255.0,  # turbo_strength
+                gr.read_byte() / 255.0 * math.pi * 2.0 - math.pi,  # steer_front
+                gr.read_byte() / 255.0 * 4.0 - 2.0,  # fl_dampen_len
+                gr.read_byte(),  # fl_ground_contact_material
+                gr.read_byte() / 255.0 * 4.0 - 2.0,  # fr_dampen_len
+                gr.read_byte(),  # fr_ground_contact_material
+                gr.read_byte() / 255.0 * 4.0 - 2.0,  # rr_dampen_len
+                gr.read_byte(),  # rr_ground_contact_material
+                gr.read_byte() / 255.0 * 4.0 - 2.0,  # rl_dampen_len
+                gr.read_byte(),  # rl_ground_contact_material
+                gr.read_byte(),  # u25
+                0 if (gr.read_byte() & 0x40) == 0 else 1,  # u26
+                gr.read_byte(),  # u27
+                gr.read_byte() / 255.0  # dirt_blend
+            )
 
             len_sizes = len(sample_sizes)
             if i >= len_sizes:
@@ -785,7 +818,6 @@ class Gbx(object):
             else:
                 sample_sz = sample_sizes[i]
 
-            record.raw_data = gr.read(sample_sz - (gr.pos - sample_pos))
             # import binascii
             # print(f'{i} {binascii.hexlify(record.raw_data)}')
             game_class.records.append(record)
