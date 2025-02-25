@@ -257,7 +257,8 @@ class ByteReader(object):
         angle = self.read_uint16() * math.pi / 65535.0
         axis = self.read_vec3_unit_4()
         vec = axis * math.sin(angle)
-        return Quaternion(vec.x, vec.y, vec.z, math.cos(angle))
+        return Quaternion(math.cos(angle), vec.x, vec.y, vec.z)
+
     def read_vec3_unit_4(self) -> Vector3:
         """Reads a Vector3 from the buffer, the vector is stored in 4 bytes
         Returns:
@@ -268,6 +269,7 @@ class ByteReader(object):
         return Vector3(math.cos(axis_heading) * math.cos(axis_pitch),
                         math.sin(axis_heading) * math.cos(axis_pitch),
                         math.sin(axis_pitch))
+
     def read_vec3_4(self) -> Vector3:
         """Reads a unit Vector3 from the buffer, the vector is stored in 4 bytes
         Returns:
@@ -276,6 +278,7 @@ class ByteReader(object):
         mag16 = self.read_int16()
         mag = 0 if mag16 == -32768 else math.exp(mag16 / 1000.0)
         return mag * self.read_vec3_unit_2()
+
     def read_vec3_unit_2(self) -> Vector3:
         """Reads a unit Vector3 from the buffer, the vector is stored in 2 bytes
         Returns:

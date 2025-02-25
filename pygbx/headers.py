@@ -97,28 +97,28 @@ class Vector3(object):
 
 class Quaternion(object):
     """The Quaternion class represents a 4D quaternion, usually read directly from the GBX file."""
-    def __init__(self, x=0, y=0, z=0, w=0):
+    def __init__(self, w=0, x=0, y=0, z=0):
+        self.w = w
         self.x = x
         self.y = y
         self.z = z
-        self.w = w
 
     def __getitem__(self, key):
         if key == 0:
-            return self.x
-        elif key == 1:
-            return self.y
-        elif key == 2:
-            return self.z
-        elif key == 3:
             return self.w
+        elif key == 1:
+            return self.x
+        elif key == 2:
+            return self.y
+        elif key == 3:
+            return self.z
         return None
 
     def __eq__(self, other):
         if isinstance(other, list):
-            return self.x == other[0] and self.y == other[1] and self.z == other[2] and self.w == other[3]
+            return self.w == other[0] and self.x == other[1] and self.y == other[2] and self.z == other[3]
 
-        return self.x == other.x and self.y == other.y and self.z == other.z and self.w == other.w
+        return self.w == other.w and self.x == other.x and self.y == other.y and self.z == other.z
 
     def as_array(self):
         """Returns the quaternion as a list.
@@ -126,7 +126,7 @@ class Quaternion(object):
         Returns:
             the quaternion as a list made of 4 elements
         """
-        return [self.x, self.y, self.z, self.w]
+        return [self.w, self.x, self.y, self.z]
 
 
 class CGameChallenge(CGameHeader):
