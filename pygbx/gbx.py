@@ -772,8 +772,6 @@ class Gbx(object):
         gr.pos = sample_data_pos
         gr.skip(fso)
         for i in range(num_samples):
-            sample_pos = gr.pos
-
             record = headers.GhostSampleRecord(
                 gr.read_vec3(),  # position
                 gr.read_quat_6(),  # rotation
@@ -809,15 +807,4 @@ class Gbx(object):
                 gr.read_byte() / 255.0  # dirt_blend
             )
 
-            len_sizes = len(sample_sizes)
-            if i >= len_sizes:
-                if len_sizes >= 1:
-                    sample_sz = sample_sizes[0]
-                else:
-                    sample_sz = 0
-            else:
-                sample_sz = sample_sizes[i]
-
-            # import binascii
-            # print(f'{i} {binascii.hexlify(record.raw_data)}')
             game_class.records.append(record)
